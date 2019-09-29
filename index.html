@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <title>kz412 - WebGL experiments</title>
+    </head>
+    <body>
+        <div style="display: inline-block; float: left;">
+            <canvas id="gl-canvas" width="1024" height="768"></canvas>
+        </div>
+        <div style="display: inline-block;width:200px; margin: 5px 5px 5px 5px;">
+            <h3>Ambient Light Colour</h3>
+            <label for="slider-red">R</label>
+            <input type="range" min="0" max="255" id="slider-red" />
+            <br />
+            <label for="slider-green">G</label>
+            <input type="range" min="0" max="255" id="slider-green" />
+            <br />
+            <label for="slider-blue">B</label>
+            <input type="range" min="0" max="255" id="slider-blue" />
+        </div>
+        <script id="shader-vs" type="x-shader/x-vertex">
+            precision mediump float;   
+
+            attribute vec3 vPosition, vNormal;
+
+            uniform mat4 uMVMatrix, uPMatrix, uMVRotation, uMVTranslation;
+            uniform mat3 uNormalMatrix;
+
+            uniform vec3 uAmbientLightColour, uDirectionalLight, uMaterialSpecular;
+            uniform float uMaterialDiffuse, uShininess;
+
+            uniform bool uOffscreen;
+            uniform vec4 uvColor;
+            varying vec4 vColor;
+
+            vec3 ads( vec4 position, vec3 norm ) {
+                //norm = vec3(uMVMatrix * uMVTranslation * uMVRotation * vec4(norm, 1.0));
+                vec3 s = normalize(vec3(vec4(uDirectionalLight,1.0) - position));
+                vec3 v = normalize(vec3(-position));
+                vec3 r = reflect(-s, norm);
+                return uAmbientLightColour +
+                uMaterialDiffuse * max(dot(s,norm), 0.0) +
+                uMaterialSpecular * pow(max(dot(r,v), 0.0), uShininess);
+            }
+
+            void main() {
+                if (!uOffscreen) {
+                    vec3 eyeNormal = normalize(uNormalMatrix * vNormal);
+                    vec4 eyePosition = uMVMatrix * uMVTranslation * uMVRotation * vec4(vPosition, 1.0);
+                    vColor = vec4(min(vec3(0.0) + ads(eyePosition, eyeNormal), 1.0), 1.0);
+                } else {
+                    vColor = uvColor;
+                }
+
+                gl_Position = uPMatrix * uMVMatrix * uMVTranslation * uMVRotation  * vec4(vPosition, 1.0);
+            }
+        </script>
+
+        <script id="shader-fs" type="x-shader/x-fragment">
+            precision mediump float;
+            varying vec4 vColor;
+            
+            void main(void) {
+                gl_FragColor = vColor;
+            }
+        </script>
+
+        <script type="text/javascript" src="./src/util.js"></script>
+        <script type="text/javascript" src="./src/gl-matrix.js"></script>
+        <script type="text/javascript" src="./src/webgl-utils.js"></script>
+        <script type="text/javascript" src="./src/monkey.js"></script>
+    </body>
+</html>
+
+
